@@ -1,0 +1,47 @@
+[Desktop Entry]
+Type=Application
+Name=X-Capture
+GenericName=Screen Capture
+GenericName[vi]=Chụp màn hình
+Comment=Capture, annotate and share screenshots (FastStone Capture style)
+Comment[vi]=Chụp, chú thích và chia sẻ ảnh màn hình (phong cách FastStone Capture)
+Exec=x-capture %F
+Icon=x-capture
+Terminal=false
+Categories=Graphics;Utility;
+Keywords=screenshot;capture;screen;print;chụp;màn hình;
+MimeType=image/png;image/jpeg;image/bmp;image/webp;image/gif;
+StartupNotify=false
+Actions=Rect;Window;Fullscreen;Scroll;Editor;Settings;
+
+[Desktop Action Rect]
+Name=Capture Rectangular Region
+Name[vi]=Chụp vùng chữ nhật
+Exec=x-capture --rect
+
+[Desktop Action Window]
+Name=Capture Window / Object
+Name[vi]=Chụp cửa sổ / đối tượng
+Exec=x-capture --window
+
+[Desktop Action Fullscreen]
+Name=Capture Full Screen
+Name[vi]=Chụp toàn màn hình
+Exec=x-capture --fullscreen
+
+[Desktop Action Scroll]
+Name=Capture Scrolling Window
+Name[vi]=Chụp cửa sổ cuộn
+Exec=x-capture --scroll
+
+[Desktop Action Editor]
+Name=Open Editor
+Name[vi]=Mở trình chỉnh sửa
+Exec=x-capture --editor
+
+[Desktop Action Settings]
+Name=Settings
+Name[vi]=Cài đặt
+Exec=x-capture --settings
+
+X-KDE-DBUS-Restricted-Interfaces=org.kde.KWin.ScreenShot2

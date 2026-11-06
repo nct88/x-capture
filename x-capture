@@ -1,0 +1,16 @@
+#!/bin/sh
+# Trình khởi chạy X-Capture. Thứ tự chọn Python:
+#   venv/  — môi trường riêng do install.sh tạo (bản sao trình thông dịch: KWin nhận ra để cho phép chụp)
+#   vendor/ — thư viện giải nén từ gói .deb khi không có sudo lẫn venv
+#   python3 hệ thống
+HERE=$(dirname "$(readlink -f "$0")")
+PY=python3
+if [ -x "$HERE/venv/bin/python3" ] && "$HERE/venv/bin/python3" -c "" 2>/dev/null; then
+    PY="$HERE/venv/bin/python3"
+elif [ -d "$HERE/vendor" ]; then
+    PYTHONPATH="$HERE/vendor${PYTHONPATH:+:$PYTHONPATH}"
+fi
+PYTHONPATH="$HERE${PYTHONPATH:+:$PYTHONPATH}"
+export PYTHONPATH
+export XCAPTURE_EXE="$(readlink -f "$0")"
+exec "$PY" -m xcapture "$@"

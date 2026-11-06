@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+venv/
+vendor/
+build/
+*.deb
+*.rpm
+*.pkg.tar.zst
+.idea/
+.vscode/

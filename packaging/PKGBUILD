@@ -1,0 +1,21 @@
+# Maintainer: truongit <lienhe@truong.me>
+pkgname=x-capture
+pkgver=1.1.0
+pkgrel=1
+pkgdesc="Screenshot tool (FastStone Capture style)"
+arch=('any')
+url="https://github.com/nct88/x-capture"
+license=('LicenseRef-nct88')
+depends=('python' 'python-pyqt6' 'python-xlib')
+optdepends=('xdotool: X11 window control'
+            'ffmpeg: screen recording'
+            'tesseract: OCR'
+            'tesseract-data-vie: Vietnamese OCR'
+            'grim: Wayland screenshots (Sway/Hyprland)'
+            'slurp: Wayland region select'
+            'wf-recorder: Wayland recording')
+package() {
+    bash "$startdir/stage.sh" "$pkgdir"
+    install -Dm644 "$startdir/copyright" \
+        "$pkgdir/usr/share/licenses/$pkgname/copyright"
+}
