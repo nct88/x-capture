@@ -1,5 +1,5 @@
 Name:           x-capture
-Version:        1.1.0
+Version:        1.2.0
 Release:        1%{?dist}
 Summary:        Screenshot tool (FastStone Capture style)
 License:        LicenseRef-nct88
@@ -47,5 +47,9 @@ desktop-file-validate %{buildroot}%{_datadir}/applications/x-capture.desktop
 %{_datadir}/icons/hicolor/*/apps/x-capture.*
 
 %changelog
+* Fri Nov 06 2026 truongit <lienhe@truong.me> - 1.2.0-1
+- Global hotkeys on GNOME/Hyprland/Sway/niri; niri window list; Wayland recording.
+- Do not fall back to X11 capture on pure Wayland (black frames).
+
 * Fri Nov 06 2026 truongit <lienhe@truong.me> - 1.1.0-1
 - First packaged release for Debian, Fedora, openSUSE and Arch.

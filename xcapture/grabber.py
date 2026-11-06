@@ -222,8 +222,8 @@ class X11Info:
 class X11Backend:
     """X11: chụp bằng Qt (XGetImage), cửa sổ và cuộn chuột qua Xlib."""
     name = "x11"
-    live = True        # QScreen.grabWindow chạy liên tục được (kính lúp thời gian thực)
-    can_scroll = True  # giả lập lăn chuột qua XTest
+    live = True
+    can_scroll = True
 
     def __init__(self, x11):
         self.x11 = x11
@@ -239,17 +239,26 @@ class X11Backend:
         r = self.x11.active_window_rect()
         return r.translated(-round(vg.x() * dpr), -round(vg.y() * dpr)) if r else None
 
+    def scroll(self, pos, clicks, down=True):
+        return self.x11.scroll(pos, clicks, down)
+
 
 class WaylandBackend:
     """Wayland: ứng dụng không tự đọc được màn hình, phải xin trình tổng hợp một ảnh tĩnh.
     Cửa sổ X-Capture chạy qua XWayland nên toạ độ Qt khớp desktop; tỉ lệ ảnh/desktop tính từ kích thước ảnh."""
     name = "wayland"
     live = False
-    can_scroll = False
+
+    @property
+    def can_scroll(self):
+        return shutil.which("ydotool") is not None
 
     def __init__(self, x11=None):
         self.x11 = x11
         self._wins = None  # (vùng desktop logic, [(QRect logic, tiêu đề, đang hoạt động)])
+
+    def scroll(self, pos, clicks, down=True):
+        return _ydotool_scroll(pos, clicks, down)
 
     def grab_image(self):
         raise NotImplementedError
@@ -357,15 +366,20 @@ def create_backend(x11):
         from . import kde
         if session.is_kde() and kde.kwin_available():
             return KWinBackend(x11)
-    if shutil.which("grim") and (session.is_wlroots() or not dbusutil.HAVE_QTDBUS):
+    grim = shutil.which("grim")
+    if session.is_niri() and grim:
+        return NiriBackend(x11)
+    if grim and session.is_wlroots():
         return WlrootsBackend(x11)
     if dbusutil.HAVE_QTDBUS:
         from . import portal
         if portal.available():
             return PortalBackend(x11)
-    if shutil.which("grim"):
+    if grim:
         return WlrootsBackend(x11)
-    return X11Backend(x11)  # XWayland: chỉ thấy cửa sổ X11, ảnh có thể đen
+    if os.environ.get("DISPLAY"):
+        return X11Backend(x11)
+    return PortalBackend(x11)
 
 
 def _run_tool_image(cmd, suffix=".png"):
@@ -434,3 +448,66 @@ def _sway_windows():
     walk(tree)
     wins.sort(key=lambda w: (not w[2], not w[3]))  # đang hoạt động, rồi cửa sổ nổi lên trước
     return vs, [w[:3] for w in wins]
+
+class NiriBackend(WlrootsBackend):
+    """niri: grim chụp màn hình; cửa sổ từ `niri msg -j windows`."""
+    name = "niri"
+
+    def list_windows(self):
+        return _niri_windows()
+
+
+def _niri_windows():
+    outs = _json(["niri", "msg", "-j", "outputs"]) or []
+    clients = _json(["niri", "msg", "-j", "windows"]) or []
+    if not isinstance(outs, list):
+        outs = []
+    if not isinstance(clients, list):
+        clients = []
+    rects = []
+    for o in outs:
+        log = o.get("logical") or o
+        x, y = log.get("x", 0), log.get("y", 0)
+        w, h = log.get("width") or o.get("width") or 0, log.get("height") or o.get("height") or 0
+        if w and h:
+            rects.append(QRect(int(x), int(y), int(w), int(h)))
+    vs = _union(rects) if rects else QRect()
+    wins = []
+    for c in clients:
+        if c.get("is_minimized"):
+            continue
+        lay = c.get("layout") or {}
+        pos = lay.get("tile_pos_in_workspace_view") or lay.get("pos_in_scrolling_layout")
+        size = lay.get("window_size") or lay.get("tile_size")
+        if not size:
+            continue
+        if isinstance(pos, (list, tuple)) and len(pos) >= 2:
+            x, y = pos[0], pos[1]
+        else:
+            x = y = 0
+        if isinstance(size, (list, tuple)) and len(size) >= 2:
+            w, h = size[0], size[1]
+        elif isinstance(size, dict):
+            w, h = size.get("width", 0), size.get("height", 0)
+        else:
+            continue
+        wins.append((QRect(int(x), int(y), int(w), int(h)),
+                     c.get("title") or "", bool(c.get("is_focused"))))
+    wins.sort(key=lambda w: (not w[2],))
+    return vs, wins
+
+
+def _ydotool_scroll(pos, clicks, down=True):
+    if not shutil.which("ydotool"):
+        return False
+    try:
+        if pos is not None:
+            subprocess.run(["ydotool", "mousemove", "--absolute", str(int(pos.x())), str(int(pos.y()))],
+                           capture_output=True, timeout=3)
+        # Linux REL_WHEEL: ydotool 1.0 accepts "click" on buttons 4/5 like X11
+        btn = "4" if not down else "5"
+        for _ in range(max(1, clicks)):
+            subprocess.run(["ydotool", "click", btn], capture_output=True, timeout=3)
+        return True
+    except (OSError, subprocess.SubprocessError):
+        return False

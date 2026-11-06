@@ -1,6 +1,6 @@
 # Maintainer: truongit <lienhe@truong.me>
 pkgname=x-capture
-pkgver=1.1.0
+pkgver=1.2.0
 pkgrel=1
 pkgdesc="Screenshot tool (FastStone Capture style)"
 arch=('any')

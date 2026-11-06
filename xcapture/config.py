@@ -78,6 +78,7 @@ DEFAULTS = {
     "auto/interval": 10,
     "xfce/backup": "",
     "kde/backup": "",
+    "gnome/backup": "",
 }
 for _a, _k in HOTKEY_ACTIONS:
     DEFAULTS["hotkeys/" + _a] = _k

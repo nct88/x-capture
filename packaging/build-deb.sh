@@ -4,7 +4,7 @@ HERE="$(cd "$(dirname "$0")" && pwd)"
 PROJECT="$(git -C "$HERE" rev-parse --show-toplevel 2>/dev/null \
     || dirname "$(cd "$HERE/.." && pwd)")"
 PKG=x-capture
-VERSION=1.1.0
+VERSION=1.2.0
 OUT="$PROJECT/build/${PKG}_${VERSION}_all.deb"
 STAGE="$(mktemp -d)"
 trap 'rm -rf "$STAGE"' EXIT
@@ -17,7 +17,7 @@ install -m 644 "$HERE/copyright" "$STAGE/usr/share/doc/$PKG/copyright"
 cat <<EOF | gzip -9n > "$STAGE/usr/share/doc/$PKG/changelog.Debian.gz"
 $PKG ($VERSION) unstable; urgency=medium
 
-  * First packaged release. Screen capture for Linux (FastStone Capture style):
+  * 1.2.0: desktop hotkeys, niri, Wayland recording. Screen capture for Linux (FastStone Capture style):
     floating toolbar, global hotkeys, annotating editor, pin-to-screen.
     Works on X11 (XFCE, MATE, Cinnamon, KDE) and Wayland (KDE, GNOME, Sway,
     Hyprland).

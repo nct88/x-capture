@@ -563,7 +563,8 @@ class ScrollCapture:
         first = len(self.parts) == 1 and self.same == 0 and not getattr(self, "_warped", False)
         if first or abs_rect.contains(dev):
             self._warped = True
-            if not self.app.x11.scroll(self.center if first else None, config.get("capture/scroll_clicks")):
+            scroller = getattr(self.app.screen, "scroll", None) or self.app.x11.scroll
+            if not scroller(self.center if first else None, config.get("capture/scroll_clicks")):
                 return self.finish()
         self.timer.start(500)
 
@@ -614,11 +615,25 @@ class Recorder:
         self.clock = QTimer(timeout=self._tick, interval=1000)
 
     def start(self):
-        if self.wf:
-            lx, ly, lw, lh = self.logical
+        from . import session
+        lx, ly, lw, lh = self.logical
+        if session.is_gnome() and self._gnome_screencast(lx, ly, lw, lh):
+            return True
+        if shutil.which("spectacle") and session.is_kde():
+            cmd = ["spectacle", "-b", "-n", "--record", "-o", self.path]
+            if self._spawn(cmd):
+                return True
+        if shutil.which("wf-recorder") and session.is_wayland():
             cmd = ["wf-recorder", "-g", f"{lx},{ly} {lw}x{lh}", "-f", self.path] + \
                 (["-a"] if config.get("record/audio") else [])
-            return self._spawn(cmd)
+            if self._spawn(cmd):
+                self.wf = True
+                return True
+        if session.is_wayland() and not os.environ.get("DISPLAY"):
+            QMessageBox.warning(None, APP_TITLE,
+                                tr("Screen recording on this Wayland session needs wf-recorder, "
+                                   "Spectacle, or GNOME Shell screencast."))
+            return False
         x, y, w, h = self.geom
         disp = os.environ.get("DISPLAY", ":0")
         cmd = ["ffmpeg", "-y", "-loglevel", "error", "-f", "x11grab", "-draw_mouse", "1",
@@ -627,6 +642,22 @@ class Recorder:
             cmd += ["-f", "pulse", "-i", "default", "-c:a", "aac"]
         cmd += ["-c:v", "libx264", "-preset", "veryfast", "-crf", "23", "-pix_fmt", "yuv420p", self.path]
         return self._spawn(cmd)
+
+    def _gnome_screencast(self, x, y, w, h):
+        from . import dbusutil as D
+        if not D.HAVE_QTDBUS or not D.has_service("org.gnome.Shell.Screencast"):
+            return False
+        try:
+            D.call("org.gnome.Shell.Screencast", "/org/gnome/Shell/Screencast",
+                   "org.gnome.Shell.Screencast", "ScreencastArea",
+                   int(x), int(y), int(w), int(h), self.path, {}, timeout=8000)
+            self.wf = False
+            self._gnome = True
+            self.box.show()
+            self.clock.start()
+            return True
+        except D.DBusError:
+            return False
 
     def _spawn(self, cmd):
         try:
@@ -652,6 +683,13 @@ class Recorder:
         self.clock.stop()
         self.box.close()
         err = ""
+        if getattr(self, "_gnome", False):
+            try:
+                from . import dbusutil as D
+                D.call("org.gnome.Shell.Screencast", "/org/gnome/Shell/Screencast",
+                       "org.gnome.Shell.Screencast", "StopScreencast", timeout=8000)
+            except Exception:
+                pass
         if self.proc and self.proc.poll() is None:
             try:
                 if self.wf:

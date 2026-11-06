@@ -32,7 +32,7 @@ class XCaptureApp(QObject):
         self.exe = exe
         self.x11 = X11Info()
         self.screen = create_backend(self.x11)
-        self.hotkeys = create_hotkeys({a: tr(l) for a, l in ACTION_LABELS.items()})
+        self.hotkeys = create_hotkeys({a: tr(l) for a, l in ACTION_LABELS.items()}, self.exe)
         self.hotkeys.triggered.connect(self.on_hotkey)
         self.hotkeys.status.connect(self._hotkey_status)
         self._warned_keys = False

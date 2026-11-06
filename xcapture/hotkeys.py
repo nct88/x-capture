@@ -148,8 +148,9 @@ class HotkeyManager(QObject):
                 self.triggered.emit(action)
 
 
+
 class NullHotkeys(QObject):
-    """Phiên Wayland không có cách đăng ký phím toàn cục: dùng phím tắt của desktop gọi `x-capture --rect`..."""
+    """Không đăng ký phím: desktop gọi `x-capture --rect` (xem DesktopBindHotkeys)."""
     triggered = pyqtSignal(str)
     status = pyqtSignal(dict)
     kind = "none"
@@ -157,14 +158,37 @@ class NullHotkeys(QObject):
     results = {}
 
     def set_bindings(self, mapping):
+        self.status.emit({a: False for a, s in mapping.items() if s})
+
+    def shutdown(self):
         pass
+
+class DesktopBindHotkeys(QObject):
+    """Wayland không-KDE: ghi bind vào GNOME/Hyprland/Sway/niri/XFCE.
+
+    Phím được desktop gửi tới `x-capture --rect` (socket của phiên đang chạy).
+    """
+    triggered = pyqtSignal(str)
+    status = pyqtSignal(dict)
+    kind = "desktop"
+    available = True
+    results = {}
+
+    def __init__(self, exe):
+        super().__init__()
+        self.exe = exe or "x-capture"
+
+    def set_bindings(self, mapping):
+        from . import desktop_keys
+        self.results = desktop_keys.bind_all(self.exe, mapping)
+        self.status.emit(self.results)
 
     def shutdown(self):
         pass
 
 
-def create_hotkeys(labels):
-    """KDE (X11 lẫn Wayland): kglobalaccel; X11 khác: XGrabKey; Wayland khác: không có."""
+def create_hotkeys(labels, exe="x-capture"):
+    """KDE: kglobalaccel. X11: XGrabKey. Wayland khác: bind desktop + CLI."""
     from . import session
     if session.is_kde():
         try:
@@ -176,4 +200,4 @@ def create_hotkeys(labels):
             pass
     if not session.is_wayland():
         return HotkeyManager()
-    return NullHotkeys()
+    return DesktopBindHotkeys(exe)

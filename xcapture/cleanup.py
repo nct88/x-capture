@@ -35,5 +35,13 @@ def main():
                 subprocess.run(["xfconf-query", "-c", "xfce4-keyboard-shortcuts", "-p", prop, "-n", "-t", "string",
                                 "-s", val], timeout=5)
         config.set("xfce/backup", "")
+    try:
+        from . import desktop_keys
+        desktop_keys.unbind_all()
+        desktop_keys.restore_gnome_print(
+            json.loads(config.get("gnome/backup") or "{}"))
+    except Exception:
+        pass
+    config.set("gnome/backup", "")
     config.sync()
     return 0

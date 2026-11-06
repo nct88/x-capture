@@ -4,6 +4,21 @@ Công cụ chụp màn hình cho Linux, mô phỏng **FastStone Capture**: thanh
 trình chỉnh sửa có chú thích, ghim ảnh lên màn hình và các công cụ màn hình. Chạy trên X11 (XFCE, MATE,
 Cinnamon, KDE...) và Wayland (KDE Plasma, GNOME, Sway/Hyprland).
 
+
+## Phím tắt trên mọi desktop (1.2.0)
+
+- **X11 (XFCE, MATE, Cinnamon, i3):** XGrabKey như trước.
+- **KDE Plasma:** kglobalaccel (Cài đặt hệ thống → Phím tắt → X-Capture).
+- **GNOME Wayland:** GSettings custom-keybindings gọi x-capture --rect (v.v.). Có thể tắt phím Print của Ảnh chụp màn hình GNOME (gsettings schema org.gnome.shell.keybindings).
+- **Hyprland:** ghi ~/.config/hypr/x-capture.conf và source trong hyprland.conf. Reload: hyprctl reload.
+- **Sway:** ~/.config/sway/x-capture.conf được include vào config. Reload: swaymsg reload.
+- **niri:** ~/.config/niri/x-capture.kdl + include. Reload compositor.
+
+Chụp trên Wayland: KWin ScreenShot2, grim (Sway/Hyprland/niri), xdg-desktop-portal (GNOME). Không còn fallback X11 trên Wayland thuần (ảnh đen). Quay phim: GNOME Shell Screencast, Spectacle (KDE), wf-recorder, ffmpeg/x11grab.
+
+Nix: 
+ix run github:nct88/x-capture (flake.nix).
+
 ## Cài đặt
 
 Gói sẵn: [Releases](https://github.com/nct88/x-capture/releases) (`.deb` / `.rpm` / Arch).
